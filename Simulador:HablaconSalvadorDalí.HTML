@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador: Habla con Salvador Dalí</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-image: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1920');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(3px);
+            z-index: 1;
+        }
+
+        .game-container {
+            position: relative;
+            z-index: 2;
+            width: 90%;
+            max-width: 650px;
+            height: 85vh;
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 3px solid #bda054;
+        }
+
+        .header {
+            background: #222;
+            color: #bda054;
+            padding: 15px;
+            text-align: center;
+            border-bottom: 3px solid #bda054;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+        }
+
+        .avatar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/2/24/Salvador_Dal%C3%AD_1965.jpg');
+            background-size: cover;
+            background-position: center top;
+            border: 2px solid #bda054;
+        }
+
+        .header-info h1 {
+            font-size: 1.4rem;
+            letter-spacing: 1px;
+        }
+
+        .counter {
+            background: #bda054;
+            color: #222;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .chat-box {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: rgba(245, 240, 225, 0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .bubble {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 15px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            position: relative;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dali-bubble {
+            background: #222;
+            color: #fff;
+            align-self: flex-start;
+            border-top-left-radius: 0;
+            border-left: 4px solid #bda054;
+        }
+
+        .student-bubble {
+            background: #bda054;
+            color: #222;
+            align-self: flex-end;
+            border-top-right-radius: 0;
+            font-weight: 500;
+        }
+
+        .error-bubble {
+            background: #d9534f;
+            color: white;
+            align-self: flex-start;
+            border-top-left-radius: 0;
+        }
+
+        /* Bloque de sugerencias de temas */
+        .topics-box {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px dashed #bda054;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 0.85rem;
+            color: #333;
+            align-self: center;
+            width: 95%;
+        }
+
+        .topics-box ul {
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+
+        .input-area {
+            padding: 15px;
+            background: #222;
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border-radius: 25px;
+            border: 2px solid #bda054;
+            background: #333;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        input[type="text"]::placeholder {
+            color: #aaa;
+        }
+
+        button {
+            background: #bda054;
+            color: #222;
+            border: none;
+            padding: 0 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #dfc27d;
+        }
+
+        .success-banner {
+            background: #4cae4c;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-weight: bold;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay"></div>
+
+    <div class="game-container">
+        <div class="header">
+            <div class="avatar-container">
+                <div class="avatar"></div>
+            </div>
+            <div class="header-info">
+                <h1>Salvador Dalí</h1>
+                <p style="font-size: 0.8rem; color: #ccc;">Simulador Interactivo</p>
+            </div>
+            <div class="counter" id="questionCounter">Preguntas: 0 / 5</div>
+        </div>
+
+        <div class="success-banner" id="successBanner">
+            ¡Felicidades! Has completado las 5 preguntas con excelente ortografía.
+        </div>
+
+        <div class="chat-box" id="chatBox">
+            <div class="bubble dali-bubble">
+                ¡Bonjour, mentes curiosas! Soy Salvador Dalí, el surrealismo en persona. Exijo que me hagáis al menos 5 preguntas sobre mi magnífica existencia. Pero cuidado... soy extremadamente estricto con la ortografía. ¡Cada pregunta debe abrir con ¿, cerrar con ? y llevar las tildes correctas!
+            </div>
+            
+            <!-- SECCIÓN NUEVA: Guía visual para los estudiantes -->
+            <div class="topics-box">
+                <strong>📌 Temas sobre los que Dalí responderá mejor:</strong>
+                <ul>
+                    <li>Su vida, nacimiento o biografía (Palabras clave: <em>vida, nació, nacimiento</em>).</li>
+                    <li>Sus cuadros u obras de arte (Palabras clave: <em>obra, pintura, cuadro</em>).</li>
+                    <li>El cuadro de los relojes derretidos (Palabras clave: <em>reloj, tiempo, persistencia</em>).</li>
+                    <li>Su esposa y musa (Palabras clave: <em>Gala</em>).</li>
+                    <li>El significado de sus famosos mostachos (Palabras clave: <em>bigote, bigotes</em>).</li>
+                    <li>Qué es el movimiento artístico que lideró (Palabras clave: <em>surrealismo, surrealista</em>).</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="studentInput" placeholder="Escribe tu pregunta a Dalí aquí..." autocomplete="off">
+            <button onclick="sendQuestion()">Preguntar</button>
+        </div>
+    </div>
+
+    <script>
+        let validQuestionsCount = 0;
+
+        document.getElementById('studentInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendQuestion();
+            }
+        });
+
+        function sendQuestion() {
+            const inputField = document.getElementById('studentInput');
+            const questionText = inputField.value.trim();
+
+            if (questionText === "") return;
+
+            appendBubble(questionText, 'student-bubble');
+            inputField.value = ""; 
+
+            const ortografiaCorrecta = validarOrtografia(questionText);
+
+            setTimeout(() => {
+                if (!ortografiaCorrecta) {
+                    appendBubble("¡Inadmisible! ¡Mis bigotes se han crispado! Una mente promedio no puede olvidar que las preguntas se abren con '¿', se cierran con '?' y que los pronombres interrogativos (qué, cómo, cuándo, dónde, quién, cuál) ¡LLEVAN TILDE! Corrige tu sintaxis y vuelve a intentarlo.", 'error-bubble');
+                } else {
+                    validQuestionsCount++;
+                    updateCounter();
+
+                    const respuestaDali = obtenerRespuestaDali(questionText);
+                    appendBubble(respuestaDali, 'dali-bubble');
+
+                    if (validQuestionsCount >= 5) {
+                        document.getElementById('successBanner').style.display = 'block';
+                    }
+                }
+            }, 800);
+        }
+
+        function appendBubble(text, className) {
+            const chatBox = document.getElementById('chatBox');
+            const bubble = document.createElement('div');
+            bubble.className = `bubble ${className}`;
+            bubble.innerText = text;
+            chatBox.appendChild(bubble);
+            chatBox.scrollTop = chatBox.scrollHeight; 
+        }
+
+        function updateCounter() {
+            document.getElementById('questionCounter').innerText = `Preguntas: ${validQuestionsCount} / 5`;
+        }
+
+        function validarOrtografia(texto) {
+            if (!texto.startsWith('¿') || !texto.endsWith('?')) {
+                return false;
+            }
+
+            const textoMinuscula = texto.toLowerCase();
+            const palabrasIncorrectas = ['que', 'como', 'cuando', 'donde', 'quien', 'cual', 'cuanto'];
+            
+            for (let palabra of palabrasIncorrectas) {
+                const regex = new RegExp(`\\b${palabra}\\b`, 'g');
+                if (regex.test(textoMinuscula)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        function obtenerRespuestaDali(texto) {
+            const t = texto.toLowerCase();
+
+            if (t.includes('pint') || t.includes('cuadro') || t.includes('obra')) {
+                return "¡Mis obras no se pintan con óleo, se pintan con la sustancia misma de los sueños! He creado mundos donde el tiempo se dobla y los elefantes caminan sobre patas de mosquito. ¿Cuál de mis delirios pictóricos te intriga más?";
+            }
+            if (t.includes('reloj') || t.includes('persistencia') || t.includes('tiempo')) {
+                return "¡Ah, los relojes blandos de 'La persistencia de la memoria' (1931)! No son más que el queso Camembert del espacio-tiempo, derritiéndose bajo el sol de mi querida Cataluña. El tiempo es elástico, ¡un genio lo sabe!";
+            }
+            if (t.includes('gala')) {
+                return "¡Gala! Ella es mi musa, mi reina, mi todo. Sin Gala, Salvador Dalí sería solo un loco más en el mundo. Ella ordenó mi caos y me convirtió en un mito viviente.";
+            }
+            if (t.includes('bigote')) {
+                return "¡Mis bigotes son antenas psicodélicas que captan las vibraciones del universo! Apuntan al cielo como las agujas de un reloj cósmico y son totalmente impermeables a la mediocridad.";
+            }
+            if (t.includes('surrealismo') || t.includes('surrealista')) {
+                return "¡El surrealismo soy yo! No es un simple movimiento artístico; es la liberación total del subconsciente. Es el método paranoico-crítico transformando la aburrida realidad en oro puro.";
+            }
+            if (t.includes('nació') || t.includes('naciste') || t.includes('vida') || t.includes('nacimiento')) {
+                return "Nací en Figueras, España, en 1904. Desde el primer segundo de mi existencia supe que estaba destinado a la inmortalidad. ¡Mi vida entera ha sido una obra de teatro perfectamente ejecutada!";
+            }
+            if (t.includes('hola') || t.includes('buenos días') || t.includes('tardes')) {
+                return "¡Saludos humanos! Vuestras palabras me complacen, siempre y cuando estéis dispuestos a abandonar la lógica ordinaria para entrar en mi universo.";
+            }
+
+            const respuestasPorDefecto = [
+                "¡Qué pregunta tan curiosamente geométrica! La respuesta está flotando en un mar de pan flotante, pero te diré que la genialidad consiste en no parecerse a nadie.",
+                "Interesante... Tu pregunta activa mi método paranoico-crítico. La respuesta se encuentra oculta detrás de un piano de cola que cae del cielo.",
+                "Como suelo decir: no te preocupes por ser moderno, es la única cosa que, desafortunadamente, no podrás evitar ser. ¡Siguiente pregunta!",
+                "¡Una duda magnífica! Tan magnífica como los huevos fritos sin plato que suelo ver en mis trances creativos."
+            ];
+
+            const indiceRandom = Math.floor(Math.random() * respuestasPorDefecto.length);
+            return respuestasPorDefecto[indiceRandom];
+        }
+    </script>
+</body>
+</html>
